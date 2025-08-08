@@ -39,10 +39,18 @@ def convolve2d(image, kernel):
 
     return finalOutput
 
+def applyMostSimilarEmbossingFilter(imageArray):
+    embossingKernel = np.array([[-1, -1, 0], [-1, 0, 1], [0, 1, 1]])
+    processedArray = ndimage.convolve(imageArray, embossingKernel)
+    processedArray = processedArray + 128
+    processedArray = np.clip(processedArray, 0, 255)
+
+    return Image.fromarray(processedArray.astype(np.uint8))
+
 
 def applyEmbossingFilter(imageArray):
     embossingKernel = (1 / 9) * np.array([[-2, 1, 0], [-1, 1, 1], [0, 1, 2]])
-    processedArray = ndimage.convolve(imageArray, embossingKernel, mode="constant")
+    processedArray = ndimage.convolve(imageArray, embossingKernel)
     processedArray = np.clip(processedArray, 0, 255)
 
     return Image.fromarray(processedArray.astype(np.uint8))
@@ -50,7 +58,7 @@ def applyEmbossingFilter(imageArray):
 
 def applyEdgeDetection(imageArray):
     edgeKernel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
-    edgesArray = ndimage.convolve(imageArray, edgeKernel, mode="constant")
+    edgesArray = ndimage.convolve(imageArray, edgeKernel)
     edgesArray = np.clip(edgesArray, 0, 255)
     binaryEdges = np.where(edgesArray < 128, 0, 255)
 
@@ -103,6 +111,7 @@ def main():
 
     originalImages = []
     embossedImages = []
+    similarEmbossedImages = []
     edgeImages = []
     imageNames = []
 
@@ -111,33 +120,43 @@ def main():
 
         embossedImage = applyEmbossingFilter(imageArray)
         edgeImage = applyEdgeDetection(imageArray)
+        similarEmbossedImage = applyMostSimilarEmbossingFilter(imageArray)
 
         originalImages.append(originalImage)
         embossedImages.append(embossedImage)
+        similarEmbossedImages.append(similarEmbossedImage)
 
         edgeImages.append(edgeImage)
-        imageNames.append("Image {i}")
+        imageNames.append(f"Image {i}")
 
 
     if originalImages:
-        plt.figure(figsize=(15, 10))
+        plt.figure(figsize=(20, 10))
 
         for i in range(len(originalImages)):
-            plt.subplot(2, 3, i * 3 + 1)
+            base_idx = i * 4
+            
+            plt.subplot(2, 4, base_idx + 1)
             plt.imshow(originalImages[i], cmap="gray")
             plt.title("Original")
             plt.axis("off")
 
-            plt.subplot(2, 3, i * 3 + 2)
+            plt.subplot(2, 4, base_idx + 2)
             plt.imshow(embossedImages[i], cmap="gray")
             plt.title("Embossed Filter")
             plt.axis("off")
 
-            plt.subplot(2, 3, i * 3 + 3)
+            plt.subplot(2, 4, base_idx + 3)
+            plt.imshow(similarEmbossedImages[i], cmap="gray")
+            plt.title("Most Similar Embossed")
+            plt.axis("off")
+
+            plt.subplot(2, 4, base_idx + 4)
             plt.imshow(edgeImages[i], cmap="gray")
             plt.title("Edge Detection")
             plt.axis("off")
 
+          
         plt.tight_layout()
         plt.show()
 
