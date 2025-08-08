@@ -23,6 +23,23 @@ def loadAndPreprocessImage(imagePath):
     return grayImage, imageArray
 
 
+# Manual 2D convolution implementation // NOT USED - ndimage is more efficient
+def convolve2d(image, kernel):
+    kHeight, kWidth = kernel.shape
+    imgHeight, imgWidth = image.shape
+
+    outputH = imgHeight - kHeight + 1
+    outputW = imgWidth - kWidth + 1
+    finalOutput = np.zeros((outputH, outputW), dtype=np.float32)
+
+    for y in range(outputH):
+        for x in range(outputW):
+            roi = image[y:y + kHeight, x:x + kWidth] 
+            finalOutput[y, x] = np.sum(roi * kernel)
+
+    return finalOutput
+
+
 def applyEmbossingFilter(imageArray):
     embossingKernel = (1 / 9) * np.array([[-2, 1, 0], [-1, 1, 1], [0, 1, 2]])
     processedArray = ndimage.convolve(imageArray, embossingKernel, mode="constant")
