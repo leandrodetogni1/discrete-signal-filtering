@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from PIL import Image
-from scipy import ndimage
-
 
 def loadAndPreprocessImage(imagePath):
     if not os.path.exists(imagePath):
@@ -23,7 +21,6 @@ def loadAndPreprocessImage(imagePath):
     return grayImage, imageArray
 
 
-# Manual 2D convolution implementation // NOT USED - ndimage is more efficient
 def convolve2d(image, kernel):
     kHeight, kWidth = kernel.shape
     imgHeight, imgWidth = image.shape
@@ -39,9 +36,23 @@ def convolve2d(image, kernel):
 
     return finalOutput
 
+def convolve(inputSignal, impulseResponse):
+    inputLength = len(inputSignal)
+    filterLength = len(impulseResponse)
+    outputLength = inputLength + filterLength - 1
+    outputSignal = np.zeros(outputLength)
+
+    for outputIdx in range(outputLength):
+        for inputIdx in range(inputLength):
+            filterIndex = outputIdx - inputIdx
+            if 0 <= filterIndex < filterLength:
+                outputSignal[outputIdx] += inputSignal[inputIdx] * impulseResponse[filterIndex]
+    
+    return outputSignal
+
 def applyMostSimilarEmbossingFilter(imageArray):
     embossingKernel = np.array([[-1, -1, 0], [-1, 0, 1], [0, 1, 1]])
-    processedArray = ndimage.convolve(imageArray, embossingKernel)
+    processedArray = convolve2d(imageArray, embossingKernel)
     processedArray = processedArray + 128
     processedArray = np.clip(processedArray, 0, 255)
 
@@ -50,7 +61,7 @@ def applyMostSimilarEmbossingFilter(imageArray):
 
 def applyEmbossingFilter(imageArray):
     embossingKernel = (1 / 9) * np.array([[-2, 1, 0], [-1, 1, 1], [0, 1, 2]])
-    processedArray = ndimage.convolve(imageArray, embossingKernel)
+    processedArray = convolve2d(imageArray, embossingKernel)
     processedArray = np.clip(processedArray, 0, 255)
 
     return Image.fromarray(processedArray.astype(np.uint8))
@@ -58,7 +69,7 @@ def applyEmbossingFilter(imageArray):
 
 def applyEdgeDetection(imageArray):
     edgeKernel = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
-    edgesArray = ndimage.convolve(imageArray, edgeKernel)
+    edgesArray = convolve2d(imageArray, edgeKernel)
     edgesArray = np.clip(edgesArray, 0, 255)
     binaryEdges = np.where(edgesArray < 128, 0, 255)
 
@@ -94,7 +105,7 @@ def main():
     
     for i, a in enumerate(filterParameters):
         hN = (1 - a) * (a**n) * unitStepFunction
-        filteredOutput = np.convolve(noisySignal, hN, mode="full")
+        filteredOutput = convolve(noisySignal, hN)
         filteredSignal = filteredOutput[:200]
         
         plt.subplot(totalPlots, 1, i + 3)
